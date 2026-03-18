@@ -4,23 +4,46 @@ SECURECAM - MAIN BACKEND SERVER (app.py)
 ============================================================
 """
 
-from flask import Flask, render_template, request, jsonify, session, redirect, send_file, send_from_directory
+from flask import (
+    Flask,
+    render_template,
+    request,
+    jsonify,
+    session,
+    redirect,
+    send_file,
+    send_from_directory,
+)
 from flask_socketio import SocketIO, emit, join_room
 import os
 import time
 from datetime import datetime, timedelta
 
 from database import (
-    add_user, get_user, init_db,
-    save_inquiry, save_feedback,
-    get_user_by_id, update_user, delete_user,
-    save_video, save_photo, save_motion,
-    get_user_videos, get_user_photos,
-    get_video_by_seq_and_user, get_photo_by_seq_and_user,
-    delete_video_record_by_user, delete_photo_record_by_user,
-    save_viewer_alarm, save_camera_cover,
-    get_latest_session_id, get_connection,
-    save_camera_session, mark_camera_session_ended
+    add_user,
+    get_user,
+    init_db,
+    save_inquiry,
+    save_feedback,
+    get_user_by_id,
+    update_user,
+    delete_user,
+    save_video,
+    save_photo,
+    save_motion,
+    get_user_videos,
+    get_user_photos,
+    get_video_by_seq_and_user,
+    get_photo_by_seq_and_user,
+    delete_video_record_by_user,
+    delete_photo_record_by_user,
+    save_viewer_alarm,
+    save_camera_cover,
+    save_human_detection,
+    get_latest_session_id,
+    get_connection,
+    save_camera_session,
+    mark_camera_session_ended,
 )
 
 
@@ -44,8 +67,8 @@ viewer_count = {}
 viewer_sequence = {}
 viewer_rooms = {}
 
-camera_rooms = {}      # camera socket sid -> room
-camera_sessions = {}   # room -> {"session_id", "start_time", "camera_sid", "camera_user_id"}
+camera_rooms = {}  # camera socket sid -> room
+camera_sessions = {}  # room -> {"session_id", "start_time", "camera_sid", "camera_user_id"}
 
 
 # ============================================================
@@ -62,6 +85,7 @@ os.makedirs(RECORDING_FOLDER, exist_ok=True)
 # ============================================================
 # HELPER FUNCTIONS
 # ============================================================
+
 
 def is_logged_in():
     return "user_id" in session
@@ -89,7 +113,7 @@ def start_camera_session(room, camera_user_id=None, camera_sid=None):
         "session_id": session_id,
         "start_time": start_time,
         "camera_sid": camera_sid,
-        "camera_user_id": camera_user_id
+        "camera_user_id": camera_user_id,
     }
 
     try:
@@ -127,6 +151,7 @@ def get_current_session_elapsed(room):
 # MEDIA FILE SERVING
 # ============================================================
 
+
 @app.route("/recordings/<path:filename>")
 def serve_recording(filename):
     return send_from_directory(RECORDING_FOLDER, filename)
@@ -140,6 +165,7 @@ def serve_photo(filename):
 # ============================================================
 # ACCOUNT MANAGEMENT
 # ============================================================
+
 
 @app.route("/account")
 def account():
@@ -158,14 +184,16 @@ def account_data():
         session.clear()
         return jsonify({"error": "user not found"}), 404
 
-    return jsonify({
-        "id": user[0],
-        "username": user[1],
-        "password": user[2],
-        "email": user[3],
-        "phone": user[4],
-        "dob": user[5]
-    })
+    return jsonify(
+        {
+            "id": user[0],
+            "username": user[1],
+            "password": user[2],
+            "email": user[3],
+            "phone": user[4],
+            "dob": user[5],
+        }
+    )
 
 
 @app.route("/update_account", methods=["POST"])
@@ -217,6 +245,7 @@ def delete_account():
 # ============================================================
 # PAGE ROUTES
 # ============================================================
+
 
 @app.route("/")
 def home():
@@ -274,6 +303,7 @@ def activity():
 # API: FETCH USER MEDIA LIST
 # ============================================================
 
+
 @app.route("/api/videos")
 def api_videos():
     if not is_logged_in():
@@ -284,13 +314,15 @@ def api_videos():
 
     data = []
     for r in rows:
-        data.append({
-            "seq": r["seq"],
-            "path": build_video_url(r["file_path"]),
-            "date": r["record_date"],
-            "time": r["record_time"],
-            "duration": r["duration_seconds"]
-        })
+        data.append(
+            {
+                "seq": r["seq"],
+                "path": build_video_url(r["file_path"]),
+                "date": r["record_date"],
+                "time": r["record_time"],
+                "duration": r["duration_seconds"],
+            }
+        )
 
     return jsonify(data)
 
@@ -305,12 +337,14 @@ def api_photos():
 
     data = []
     for r in rows:
-        data.append({
-            "seq": r["seq"],
-            "path": build_photo_url(r["file_path"]),
-            "date": r["capture_date"],
-            "time": r["capture_time"]
-        })
+        data.append(
+            {
+                "seq": r["seq"],
+                "path": build_photo_url(r["file_path"]),
+                "date": r["capture_date"],
+                "time": r["capture_time"],
+            }
+        )
 
     return jsonify(data)
 
@@ -318,6 +352,7 @@ def api_photos():
 # ============================================================
 # DOWNLOAD MEDIA
 # ============================================================
+
 
 @app.route("/download/video/<int:seq>")
 def download_video(seq):
@@ -357,6 +392,7 @@ def download_photo(seq):
 # DELETE MEDIA
 # ============================================================
 
+
 @app.route("/delete/video/<int:seq>", methods=["DELETE"])
 def delete_video(seq):
     if not is_logged_in():
@@ -394,6 +430,7 @@ def delete_photo(seq):
 # ============================================================
 # USER AUTHENTICATION
 # ============================================================
+
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -452,6 +489,7 @@ def logout():
 # MEDIA UPLOAD ROUTES
 # ============================================================
 
+
 @app.route("/upload_recording", methods=["POST"])
 def upload_recording():
     if not is_logged_in():
@@ -505,6 +543,7 @@ def upload_photo():
 # SOCKET.IO EVENTS
 # ============================================================
 
+
 @socketio.on("join")
 def handle_join(data):
     room = data.get("room")
@@ -526,7 +565,9 @@ def handle_join(data):
         camera_rooms[request.sid] = room
 
         # start a fresh session when camera joins or rejoins
-        start_camera_session(room, camera_user_id=camera_user_id, camera_sid=request.sid)
+        start_camera_session(
+            room, camera_user_id=camera_user_id, camera_sid=request.sid
+        )
 
     elif role == "viewer":
         viewer_count[room] += 1
@@ -537,11 +578,16 @@ def handle_join(data):
 
         emit("viewer_number", {"number": viewer_number}, room=request.sid)
 
-        emit("viewer_joined", {
-            "sid": request.sid,
-            "count": viewer_count[room],
-            "username": session.get("username", "Viewer")
-        }, room=room, skip_sid=request.sid)
+        emit(
+            "viewer_joined",
+            {
+                "sid": request.sid,
+                "count": viewer_count[room],
+                "username": session.get("username", "Viewer"),
+            },
+            room=room,
+            skip_sid=request.sid,
+        )
 
 
 @socketio.on("viewer_ready")
@@ -555,27 +601,25 @@ def viewer_ready(data):
 
 @socketio.on("offer")
 def handle_offer(data):
-    emit("offer", {
-        "offer": data["offer"],
-        "sid": request.sid,
-        "room": data["room"]
-    }, room=data["target"])
+    emit(
+        "offer",
+        {"offer": data["offer"], "sid": request.sid, "room": data["room"]},
+        room=data["target"],
+    )
 
 
 @socketio.on("answer")
 def handle_answer(data):
-    emit("answer", {
-        "answer": data["answer"],
-        "sid": request.sid
-    }, room=data["target"])
+    emit("answer", {"answer": data["answer"], "sid": request.sid}, room=data["target"])
 
 
 @socketio.on("candidate")
 def handle_candidate(data):
-    emit("candidate", {
-        "candidate": data["candidate"],
-        "sid": request.sid
-    }, room=data["target"])
+    emit(
+        "candidate",
+        {"candidate": data["candidate"], "sid": request.sid},
+        room=data["target"],
+    )
 
 
 @socketio.on("chat_message")
@@ -584,10 +628,11 @@ def handle_chat_message(data):
     if not target:
         return
 
-    emit("chat_message", {
-        "sender": data.get("sender"),
-        "message": data.get("message")
-    }, room=target)
+    emit(
+        "chat_message",
+        {"sender": data.get("sender"), "message": data.get("message")},
+        room=target,
+    )
 
 
 @socketio.on("camera_location")
@@ -596,11 +641,12 @@ def handle_camera_location(data):
     if not room:
         return
 
-    emit("camera_location", {
-        "lat": data.get("lat"),
-        "lng": data.get("lng"),
-        "source": data.get("source")
-    }, room=room, skip_sid=request.sid)
+    emit(
+        "camera_location",
+        {"lat": data.get("lat"), "lng": data.get("lng"), "source": data.get("source")},
+        room=room,
+        skip_sid=request.sid,
+    )
 
 
 @socketio.on("camera_cover_event")
@@ -611,7 +657,9 @@ def handle_camera_cover(data):
 
     active = get_active_room_session(room)
     if not active:
-        start_camera_session(room, camera_user_id=session.get("user_id"), camera_sid=request.sid)
+        start_camera_session(
+            room, camera_user_id=session.get("user_id"), camera_sid=request.sid
+        )
         active = get_active_room_session(room)
 
     session_id = active["session_id"]
@@ -665,7 +713,9 @@ def handle_motion_event(data):
 
     active = get_active_room_session(room)
     if not active:
-        start_camera_session(room, camera_user_id=session.get("user_id"), camera_sid=request.sid)
+        start_camera_session(
+            room, camera_user_id=session.get("user_id"), camera_sid=request.sid
+        )
         active = get_active_room_session(room)
 
     try:
@@ -684,10 +734,7 @@ def handle_disconnect():
         if room in viewer_count and viewer_count[room] > 0:
             viewer_count[room] -= 1
 
-        emit("viewer_left", {
-            "sid": sid,
-            "count": viewer_count.get(room, 0)
-        }, room=room)
+        emit("viewer_left", {"sid": sid, "count": viewer_count.get(room, 0)}, room=room)
 
         del viewer_rooms[sid]
 
@@ -705,20 +752,42 @@ def handle_disconnect():
 
         del camera_rooms[sid]
 
+
 @socketio.on("human_detected")
 def handle_human_detected(data):
     room = data.get("room")
     if not room:
         return
 
-    emit("human_detected", {
-        "room": room,
-        "time": data.get("time", 0),
-        "count": data.get("count", 1)
-    }, room=room, skip_sid=request.sid)
+    active = get_active_room_session(room)
+    if not active:
+        start_camera_session(
+            room, camera_user_id=session.get("user_id"), camera_sid=request.sid
+        )
+        active = get_active_room_session(room)
+
+    if active:
+        session_id = active["session_id"]
+        time_sec = data.get("time", 0)
+        person_count = data.get("count", 1)
+
+        try:
+            save_human_detection(room, session_id, int(time_sec), int(person_count))
+        except Exception as e:
+            print("Human detection DB error:", e)
+
+    emit(
+        "human_detected",
+        {"room": room, "time": data.get("time", 0), "count": data.get("count", 1)},
+        room=room,
+        skip_sid=request.sid,
+    )
+
+
 # ============================================================
 # ACTIVITY REPORT ROUTES
 # ============================================================
+
 
 @app.route("/api/activity/motion")
 def api_activity_motion():
@@ -737,23 +806,23 @@ def api_activity_motion():
         conn = get_connection()
         c = conn.cursor()
 
-        c.execute("""
+        c.execute(
+            """
             SELECT time_sec, motion_count
             FROM motion_events
             WHERE camera_room_id=? AND session_id=?
             ORDER BY time_sec DESC
             LIMIT 50
-        """, (room, session_id))
+        """,
+            (room, session_id),
+        )
 
         rows = c.fetchall()[::-1]
         conn.close()
 
         data = []
         for r in rows:
-            data.append({
-                "time": r["time_sec"],
-                "motion": r["motion_count"]
-            })
+            data.append({"time": r["time_sec"], "motion": r["motion_count"]})
 
         return jsonify(data)
 
@@ -765,133 +834,122 @@ def api_activity_motion():
 @app.route("/api/activity/alarms")
 def api_activity_alarms():
     if not is_logged_in():
-        return jsonify({
-            "viewer_alarm_times": [],
-            "camera_cover_times": []
-        }), 401
+        return jsonify({"viewer_alarm_times": [], "camera_cover_times": []}), 401
 
     room = request.args.get("camera")
     if not room:
-        return jsonify({
-            "viewer_alarm_times": [],
-            "camera_cover_times": []
-        })
+        return jsonify({"viewer_alarm_times": [], "camera_cover_times": []})
 
     try:
         session_id = get_current_or_latest_session_id(room)
         if not session_id:
-            return jsonify({
-                "viewer_alarm_times": [],
-                "camera_cover_times": []
-            })
+            return jsonify({"viewer_alarm_times": [], "camera_cover_times": []})
 
         conn = get_connection()
         c = conn.cursor()
 
-        c.execute("""
+        c.execute(
+            """
             SELECT time_sec
             FROM viewer_alarm_events
             WHERE camera_room_id=? AND session_id=?
             ORDER BY time_sec
-        """, (room, session_id))
+        """,
+            (room, session_id),
+        )
         viewer_alarm_times = [r["time_sec"] for r in c.fetchall()]
 
-        c.execute("""
-            SELECT time_sec
-            FROM camera_cover_events
-            WHERE camera_room_id=? AND session_id=?
-            ORDER BY time_sec
-        """, (room, session_id))
-        cover_times = [r["time_sec"] for r in c.fetchall()]
-
-        conn.close()
-
-        return jsonify({
-            "viewer_alarm_times": viewer_alarm_times,
-            "camera_cover_times": cover_times
-        })
-
-    except Exception as e:
-        print("Alarm API Error:", e)
-        return jsonify({
-            "viewer_alarm_times": [],
-            "camera_cover_times": []
-        })
-
-
-@app.route("/api/activity/summary")
-def api_activity_summary():
-    if not is_logged_in():
-        return jsonify({
-            "total_motion": 0,
-            "viewer_alarms": 0,
-            "camera_covers": 0
-        }), 401
-
-    room = request.args.get("camera")
-    if not room:
-        return jsonify({
-            "total_motion": 0,
-            "viewer_alarms": 0,
-            "camera_covers": 0
-        })
-
-    try:
-        session_id = get_current_or_latest_session_id(room)
-        if not session_id:
-            return jsonify({
-                "total_motion": 0,
-                "viewer_alarms": 0,
-                "camera_covers": 0
-            })
-
-        conn = get_connection()
-        c = conn.cursor()
-
-        c.execute("""
-            SELECT SUM(motion_count) as total_motion
-            FROM motion_events
-            WHERE camera_room_id=? AND session_id=?
-        """, (room, session_id))
-        motion_row = c.fetchone()
-        total_motion = motion_row["total_motion"] if motion_row and motion_row["total_motion"] else 0
-
-        c.execute("""
-            SELECT COUNT(*) as total
-            FROM viewer_alarm_events
-            WHERE camera_room_id=? AND session_id=?
-        """, (room, session_id))
-        viewer_alarm_row = c.fetchone()
-        viewer_alarms = viewer_alarm_row["total"] if viewer_alarm_row else 0
-
-        c.execute("""
+        c.execute(
+            """
             SELECT COUNT(*) as total
             FROM camera_cover_events
             WHERE camera_room_id=? AND session_id=?
-        """, (room, session_id))
+        """,
+            (room, session_id),
+        )
         camera_cover_row = c.fetchone()
         camera_covers = camera_cover_row["total"] if camera_cover_row else 0
 
+        c.execute(
+            """
+            SELECT COUNT(*) as total
+            FROM human_detection_events
+            WHERE camera_room_id=? AND session_id=?
+        """,
+            (room, session_id),
+        )
+        human_detection_row = c.fetchone()
+        human_detections = human_detection_row["total"] if human_detection_row else 0
+
         conn.close()
 
-        return jsonify({
-            "total_motion": total_motion,
-            "viewer_alarms": viewer_alarms,
-            "camera_covers": camera_covers
-        })
+        return jsonify(
+            {
+                "total_motion": total_motion,
+                "viewer_alarms": viewer_alarms,
+                "camera_covers": camera_covers,
+                "human_detections": human_detections,
+            }
+        )
 
     except Exception as e:
         print("Summary API error:", e)
-        return jsonify({
-            "total_motion": 0,
-            "viewer_alarms": 0,
-            "camera_covers": 0
-        })
+        return jsonify(
+            {
+                "total_motion": 0,
+                "viewer_alarms": 0,
+                "camera_covers": 0,
+                "human_detections": 0,
+            }
+        )
+
+
+@app.route("/api/activity/human_detections")
+def api_activity_human_detections():
+    if not is_logged_in():
+        return jsonify([]), 401
+
+    room = request.args.get("camera")
+    if not room:
+        return jsonify([])
+
+    try:
+        session_id = get_current_or_latest_session_id(room)
+        if not session_id:
+            return jsonify([])
+
+        conn = get_connection()
+        c = conn.cursor()
+
+        c.execute(
+            """
+            SELECT time_sec, person_count
+            FROM human_detection_events
+            WHERE camera_room_id=? AND session_id=?
+            ORDER BY time_sec DESC
+            LIMIT 50
+        """,
+            (room, session_id),
+        )
+
+        rows = c.fetchall()[::-1]
+        conn.close()
+
+        data = []
+        for r in rows:
+            data.append({"time": r["time_sec"], "count": r["person_count"]})
+
+        return jsonify(data)
+
+    except Exception as e:
+        print("Human detection API Error:", e)
+        return jsonify([])
 
 
 # ============================================================
 # CONTACT / FEEDBACK
 # ============================================================
+
 
 @app.route("/submit_inquiry", methods=["POST"])
 def submit_inquiry():
@@ -936,9 +994,4 @@ def submit_feedback():
 # ============================================================
 
 if __name__ == "__main__":
-    socketio.run(
-        app,
-        host="0.0.0.0",
-        port=5000,
-        debug=True
-    )
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)

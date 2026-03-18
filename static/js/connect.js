@@ -19,6 +19,24 @@ let humanStableHits = 0;
 let lastHumanAlertTime = 0;
 let humanDetectionBusy = false;
 
+const SENSITIVITY_PRESETS = {
+  low: { threshold: 0.50, cooldown: 5000, minHits: 2, interval: 1200 },
+  medium: { threshold: 0.40, cooldown: 3000, minHits: 1, interval: 800 },
+  high: { threshold: 0.30, cooldown: 2000, minHits: 1, interval: 600 }
+};
+
+let currentSensitivity = "medium";
+
+function setSensitivity(level) {
+  if (!SENSITIVITY_PRESETS[level]) return;
+  currentSensitivity = level;
+  
+  if (humanDetectionEnabled) {
+    stopHumanDetection();
+    startHumanDetection();
+  }
+}
+
 const video = document.getElementById("localVideo");
 const viewerList = document.getElementById("viewerList");
 const viewerSelect = document.getElementById("viewerSelect");
@@ -680,6 +698,8 @@ function startHumanDetection() {
     clearInterval(humanDetectionTimer);
   }
 
+  const preset = SENSITIVITY_PRESETS[currentSensitivity];
+
   humanDetectionTimer = setInterval(async () => {
     if (humanDetectionBusy) return;
     humanDetectionBusy = true;
@@ -693,7 +713,7 @@ function startHumanDetection() {
       const predictions = await humanDetectionModel.detect(video);
 
       const persons = predictions.filter(p =>
-        p.class === "person" && (p.score || 0) >= 0.66
+        p.class === "person" && (p.score || 0) >= preset.threshold
       );
 
       if (persons.length > 0) {
@@ -704,13 +724,14 @@ function startHumanDetection() {
 
       const now = Date.now();
 
-      if (humanStableHits >= 2 && now - lastHumanAlertTime > 10000) {
+      if (humanStableHits >= preset.minHits && now - lastHumanAlertTime > preset.cooldown) {
         triggerAlarm("Human detected!");
 
         socket.emit("human_detected", {
           room: cameraId,
           time: getElapsedSessionTime(),
-          count: persons.length
+          count: persons.length,
+          sensitivity: currentSensitivity
         });
 
         lastHumanAlertTime = now;
@@ -722,7 +743,7 @@ function startHumanDetection() {
     } finally {
       humanDetectionBusy = false;
     }
-  }, 1200);
+  }, preset.interval);
 }
 
 function stopHumanDetection() {

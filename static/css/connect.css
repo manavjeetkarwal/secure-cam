@@ -48,6 +48,59 @@ body{background:radial-gradient(circle at top left, rgba(56,189,248,0.12), trans
   margin-bottom:16px;
 }
 
+.human-detection-controls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-bottom:16px;
+  padding:16px;
+  border-radius:16px;
+  background:rgba(239,68,68,0.1);
+  border:1px solid rgba(239,68,68,0.2);
+}
+
+#humanDetectBtn{
+  border:none;
+  border-radius:14px;
+  padding:12px 18px;
+  font-weight:800;
+  cursor:pointer;
+  transition:0.3s ease;
+  background:linear-gradient(135deg,#ef4444,#dc2626);
+  color:white;
+}
+
+#humanDetectBtn:hover{
+  transform:translateY(-2px);
+}
+
+.sensitivity-control{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.sensitivity-control label{
+  color:var(--muted);
+  font-weight:600;
+}
+
+#sensitivitySelect{
+  padding:10px 14px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.08);
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+  outline:none;
+}
+
+#sensitivitySelect option{
+  background:#0f172a;
+  color:white;
+}
+
 .camera-controls button,
 .chat-controls button{
   border:none;

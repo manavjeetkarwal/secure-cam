@@ -532,15 +532,62 @@ document.addEventListener("visibilitychange", () => {
     Notification.requestPermission().catch(() => {});
   }
 
+let humanAlertSound = null;
+let humanAlertOverlay = null;
+
+function initHumanAlertUI() {
+  if (humanAlertSound) return;
+
+  humanAlertSound = document.createElement("audio");
+  humanAlertSound.src = "https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg";
+  humanAlertSound.loop = false;
+
+  humanAlertOverlay = document.createElement("div");
+  humanAlertOverlay.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(220, 53, 69, 0.95);
+    color: white;
+    padding: 30px 50px;
+    border-radius: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    z-index: 10000;
+    display: none;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  `;
+  humanAlertOverlay.innerHTML = "HUMAN DETECTED";
+  document.body.appendChild(humanAlertOverlay);
+}
+
 socket.on("human_detected", (data) => {
   if (data.room !== roomId) return;
 
-  alert("⚠️ Human detected in camera!");
+  initHumanAlertUI();
+
+  if (humanAlertSound) {
+    humanAlertSound.currentTime = 0;
+    humanAlertSound.play().catch(() => {});
+  }
+
+  if (humanAlertOverlay) {
+    humanAlertOverlay.style.display = "block";
+    humanAlertOverlay.innerHTML = `HUMAN DETECTED<br><small>${data.count || 1} person(s)</small>`;
+
+    setTimeout(() => {
+      if (humanAlertOverlay) {
+        humanAlertOverlay.style.display = "none";
+      }
+    }, 5000);
+  }
 
   if ("Notification" in window && Notification.permission === "granted") {
     try {
       new Notification("SecureCam Alert", {
-        body: "Human detected in camera"
+        body: `Human detected! ${data.count || 1} person(s) in view.`
       });
     } catch (e) {}
   }

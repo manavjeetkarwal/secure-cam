@@ -14,6 +14,7 @@ DB = "securecam.db"
 # DATABASE CONNECTION
 # ============================================================
 
+
 def get_connection():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
@@ -23,6 +24,7 @@ def get_connection():
 # ============================================================
 # DATABASE INITIALIZATION
 # ============================================================
+
 
 def init_db():
     conn = get_connection()
@@ -106,6 +108,16 @@ def init_db():
     """)
 
     c.execute("""
+    CREATE TABLE IF NOT EXISTS human_detection_events(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        camera_room_id TEXT,
+        session_id TEXT,
+        time_sec INTEGER,
+        person_count INTEGER
+    )
+    """)
+
+    c.execute("""
     CREATE TABLE IF NOT EXISTS inquiries(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         first_name TEXT,
@@ -135,13 +147,14 @@ def init_db():
 # USER MANAGEMENT
 # ============================================================
 
+
 def add_user(username, password, email, phone, dob):
     conn = get_connection()
     c = conn.cursor()
 
     c.execute(
         "INSERT INTO users(username,password,email,phone,dob) VALUES (?,?,?,?,?)",
-        (username, password, email, phone, dob)
+        (username, password, email, phone, dob),
     )
 
     conn.commit()
@@ -175,17 +188,23 @@ def update_user(uid, username, password, email, phone, dob):
     c = conn.cursor()
 
     if password:
-        c.execute("""
+        c.execute(
+            """
         UPDATE users
         SET username=?, password=?, email=?, phone=?, dob=?
         WHERE id=?
-        """, (username, password, email, phone, dob, uid))
+        """,
+            (username, password, email, phone, dob, uid),
+        )
     else:
-        c.execute("""
+        c.execute(
+            """
         UPDATE users
         SET username=?, email=?, phone=?, dob=?
         WHERE id=?
-        """, (username, email, phone, dob, uid))
+        """,
+            (username, email, phone, dob, uid),
+        )
 
     conn.commit()
     conn.close()
@@ -205,15 +224,19 @@ def delete_user(uid):
 # CAMERA SESSION MANAGEMENT
 # ============================================================
 
+
 def save_camera_session(camera_room_id, session_id, camera_user_id=None):
     conn = get_connection()
     c = conn.cursor()
 
-    c.execute("""
+    c.execute(
+        """
     INSERT OR IGNORE INTO camera_sessions
     (camera_room_id, session_id, camera_user_id)
     VALUES (?,?,?)
-    """, (camera_room_id, session_id, camera_user_id))
+    """,
+        (camera_room_id, session_id, camera_user_id),
+    )
 
     conn.commit()
     conn.close()
@@ -223,11 +246,14 @@ def mark_camera_session_ended(session_id):
     conn = get_connection()
     c = conn.cursor()
 
-    c.execute("""
+    c.execute(
+        """
     UPDATE camera_sessions
     SET ended_at=CURRENT_TIMESTAMP
     WHERE session_id=?
-    """, (session_id,))
+    """,
+        (session_id,),
+    )
 
     conn.commit()
     conn.close()
@@ -237,13 +263,16 @@ def get_latest_session_id(camera_room_id):
     conn = get_connection()
     c = conn.cursor()
 
-    c.execute("""
+    c.execute(
+        """
     SELECT session_id
     FROM camera_sessions
     WHERE camera_room_id=?
     ORDER BY id DESC
     LIMIT 1
-    """, (camera_room_id,))
+    """,
+        (camera_room_id,),
+    )
 
     row = c.fetchone()
 
@@ -254,6 +283,7 @@ def get_latest_session_id(camera_room_id):
 # ============================================================
 # MEDIA STORAGE
 # ============================================================
+
 
 def save_video(path, viewer_user_id, camera_room_id, duration):
     conn = get_connection()
@@ -268,11 +298,14 @@ def save_video(path, viewer_user_id, camera_room_id, duration):
     except (TypeError, ValueError):
         duration = 0
 
-    c.execute("""
+    c.execute(
+        """
     INSERT INTO videos
     (viewer_user_id, camera_room_id, file_path, record_date, record_time, duration_seconds)
     VALUES (?,?,?,?,?,?)
-    """, (viewer_user_id, camera_room_id, path, record_date, record_time, duration))
+    """,
+        (viewer_user_id, camera_room_id, path, record_date, record_time, duration),
+    )
 
     conn.commit()
     conn.close()
@@ -286,11 +319,14 @@ def save_photo(path, viewer_user_id, camera_room_id):
     capture_date = now.strftime("%Y-%m-%d")
     capture_time = now.strftime("%H:%M:%S")
 
-    c.execute("""
+    c.execute(
+        """
     INSERT INTO photos
     (viewer_user_id, camera_room_id, file_path, capture_date, capture_time)
     VALUES (?,?,?,?,?)
-    """, (viewer_user_id, camera_room_id, path, capture_date, capture_time))
+    """,
+        (viewer_user_id, camera_room_id, path, capture_date, capture_time),
+    )
 
     conn.commit()
     conn.close()
@@ -299,6 +335,7 @@ def save_photo(path, viewer_user_id, camera_room_id):
 # ============================================================
 # MOTION DETECTION EVENTS
 # ============================================================
+
 
 def save_motion(camera_room_id, session_id, time_sec, count):
     conn = get_connection()
@@ -314,11 +351,14 @@ def save_motion(camera_room_id, session_id, time_sec, count):
     except (TypeError, ValueError):
         count = 0
 
-    c.execute("""
+    c.execute(
+        """
     INSERT INTO motion_events
     (camera_room_id, session_id, time_sec, motion_count)
     VALUES (?,?,?,?)
-    """, (camera_room_id, session_id, time_sec, count))
+    """,
+        (camera_room_id, session_id, time_sec, count),
+    )
 
     conn.commit()
     conn.close()
@@ -338,15 +378,19 @@ def clear_motion_events():
 # FETCH USER MEDIA
 # ============================================================
 
+
 def get_user_videos(uid):
     conn = get_connection()
     c = conn.cursor()
 
-    c.execute("""
+    c.execute(
+        """
     SELECT * FROM videos
     WHERE viewer_user_id=?
     ORDER BY seq DESC
-    """, (uid,))
+    """,
+        (uid,),
+    )
 
     rows = c.fetchall()
 
@@ -358,11 +402,14 @@ def get_user_photos(uid):
     conn = get_connection()
     c = conn.cursor()
 
-    c.execute("""
+    c.execute(
+        """
     SELECT * FROM photos
     WHERE viewer_user_id=?
     ORDER BY seq DESC
-    """, (uid,))
+    """,
+        (uid,),
+    )
 
     rows = c.fetchall()
 
@@ -374,10 +421,13 @@ def get_video_by_seq_and_user(seq, uid):
     conn = get_connection()
     c = conn.cursor()
 
-    c.execute("""
+    c.execute(
+        """
     SELECT * FROM videos
     WHERE seq=? AND viewer_user_id=?
-    """, (seq, uid))
+    """,
+        (seq, uid),
+    )
 
     row = c.fetchone()
 
@@ -389,10 +439,13 @@ def get_photo_by_seq_and_user(seq, uid):
     conn = get_connection()
     c = conn.cursor()
 
-    c.execute("""
+    c.execute(
+        """
     SELECT * FROM photos
     WHERE seq=? AND viewer_user_id=?
-    """, (seq, uid))
+    """,
+        (seq, uid),
+    )
 
     row = c.fetchone()
 
@@ -404,14 +457,18 @@ def get_photo_by_seq_and_user(seq, uid):
 # DELETE MEDIA
 # ============================================================
 
+
 def delete_video_record_by_user(seq, uid):
     conn = get_connection()
     c = conn.cursor()
 
-    c.execute("""
+    c.execute(
+        """
     SELECT file_path FROM videos
     WHERE seq=? AND viewer_user_id=?
-    """, (seq, uid))
+    """,
+        (seq, uid),
+    )
     row = c.fetchone()
 
     if not row:
@@ -420,10 +477,13 @@ def delete_video_record_by_user(seq, uid):
 
     path = row["file_path"]
 
-    c.execute("""
+    c.execute(
+        """
     DELETE FROM videos
     WHERE seq=? AND viewer_user_id=?
-    """, (seq, uid))
+    """,
+        (seq, uid),
+    )
 
     conn.commit()
     conn.close()
@@ -435,10 +495,13 @@ def delete_photo_record_by_user(seq, uid):
     conn = get_connection()
     c = conn.cursor()
 
-    c.execute("""
+    c.execute(
+        """
     SELECT file_path FROM photos
     WHERE seq=? AND viewer_user_id=?
-    """, (seq, uid))
+    """,
+        (seq, uid),
+    )
     row = c.fetchone()
 
     if not row:
@@ -447,10 +510,13 @@ def delete_photo_record_by_user(seq, uid):
 
     path = row["file_path"]
 
-    c.execute("""
+    c.execute(
+        """
     DELETE FROM photos
     WHERE seq=? AND viewer_user_id=?
-    """, (seq, uid))
+    """,
+        (seq, uid),
+    )
 
     conn.commit()
     conn.close()
@@ -462,6 +528,7 @@ def delete_photo_record_by_user(seq, uid):
 # SECURITY EVENTS
 # ============================================================
 
+
 def save_viewer_alarm(viewer_user_id, camera_room_id, session_id, time_sec):
     conn = get_connection()
     c = conn.cursor()
@@ -471,11 +538,14 @@ def save_viewer_alarm(viewer_user_id, camera_room_id, session_id, time_sec):
     except (TypeError, ValueError):
         time_sec = 0
 
-    c.execute("""
+    c.execute(
+        """
     INSERT INTO viewer_alarm_events
     (viewer_user_id, camera_room_id, session_id, time_sec)
     VALUES (?,?,?,?)
-    """, (viewer_user_id, camera_room_id, session_id, time_sec))
+    """,
+        (viewer_user_id, camera_room_id, session_id, time_sec),
+    )
 
     conn.commit()
     conn.close()
@@ -490,11 +560,41 @@ def save_camera_cover(camera_room_id, session_id, time_sec):
     except (TypeError, ValueError):
         time_sec = 0
 
-    c.execute("""
+    c.execute(
+        """
     INSERT INTO camera_cover_events
     (camera_room_id, session_id, time_sec)
     VALUES (?,?,?)
-    """, (camera_room_id, session_id, time_sec))
+    """,
+        (camera_room_id, session_id, time_sec),
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def save_human_detection(camera_room_id, session_id, time_sec, person_count=1):
+    conn = get_connection()
+    c = conn.cursor()
+
+    try:
+        time_sec = int(time_sec)
+    except (TypeError, ValueError):
+        time_sec = 0
+
+    try:
+        person_count = int(person_count)
+    except (TypeError, ValueError):
+        person_count = 1
+
+    c.execute(
+        """
+    INSERT INTO human_detection_events
+    (camera_room_id, session_id, time_sec, person_count)
+    VALUES (?,?,?,?)
+    """,
+        (camera_room_id, session_id, time_sec, person_count),
+    )
 
     conn.commit()
     conn.close()
@@ -504,15 +604,19 @@ def save_camera_cover(camera_room_id, session_id, time_sec):
 # CONTACT / FEEDBACK STORAGE
 # ============================================================
 
+
 def save_inquiry(first_name, last_name, email, phone, subject, message):
     conn = get_connection()
     c = conn.cursor()
 
-    c.execute("""
+    c.execute(
+        """
     INSERT INTO inquiries
     (first_name, last_name, email, phone, subject, message)
     VALUES (?,?,?,?,?,?)
-    """, (first_name, last_name, email, phone, subject, message))
+    """,
+        (first_name, last_name, email, phone, subject, message),
+    )
 
     conn.commit()
     conn.close()
@@ -527,11 +631,14 @@ def save_feedback(message, rating):
     except (TypeError, ValueError):
         rating = 0
 
-    c.execute("""
+    c.execute(
+        """
     INSERT INTO feedback
     (message, rating)
     VALUES (?,?)
-    """, (message, rating))
+    """,
+        (message, rating),
+    )
 
     conn.commit()
     conn.close()

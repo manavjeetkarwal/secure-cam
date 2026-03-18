@@ -57,9 +57,18 @@
         <button class="switch-btn" onclick="switchCamera()">Switch Camera</button>
         <button class="danger-btn" onclick="stopCamera()">Stop Camera</button>
         <button class="warning-btn" onclick="stopAlarm()">Stop Alarm</button>
-        <button onclick="toggleHumanDetection()" id="humanDetectBtn">
-  Human Detection: OFF
-</button>
+      </div>
+
+      <div class="human-detection-controls">
+        <button onclick="toggleHumanDetection()" id="humanDetectBtn">Human Detection: OFF</button>
+        <div class="sensitivity-control">
+          <label for="sensitivitySelect">Sensitivity:</label>
+          <select id="sensitivitySelect" onchange="setSensitivity(this.value)">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
       </div>
 
       <div id="cameraError" class="error-box"></div>
