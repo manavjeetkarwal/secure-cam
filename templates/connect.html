@@ -6,7 +6,8 @@
 <title>SecureCam - Camera</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/connect.css') }}">
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-</head>
+<script src="{{ url_for('static', filename='js/vendor/tf.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/vendor/coco-ssd.min.js') }}"></script>
 <body>
 
 <nav class="navbar">
@@ -60,7 +61,7 @@
       </div>
 
       <div class="human-detection-controls">
-        <button onclick="toggleHumanDetection()" id="humanDetectBtn">Human Detection: OFF</button>
+        <button onclick="toggleHumanDetection()" id="humanDetectBtn">Intrusion Detection: OFF</button>
         <div class="sensitivity-control">
           <label for="sensitivitySelect">Sensitivity:</label>
           <select id="sensitivitySelect" onchange="setSensitivity(this.value)">
@@ -114,9 +115,6 @@
 </audio>
 
 <canvas id="coverCanvas" style="display:none;"></canvas>
-
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 
 <script src="{{ url_for('static', filename='js/connect.js') }}"></script>
 </body>

@@ -532,63 +532,137 @@ document.addEventListener("visibilitychange", () => {
     Notification.requestPermission().catch(() => {});
   }
 
-let humanAlertSound = null;
+let humanAlertAudio = null;
 let humanAlertOverlay = null;
+let intrusionAlertActive = false;
 
 function initHumanAlertUI() {
-  if (humanAlertSound) return;
+  if (!humanAlertAudio) {
+    humanAlertAudio = new Audio();
+    humanAlertAudio.src = "https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg";
+    humanAlertAudio.loop = true;
+  }
 
-  humanAlertSound = document.createElement("audio");
-  humanAlertSound.src = "https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg";
-  humanAlertSound.loop = false;
+  if (!humanAlertOverlay) {
+    humanAlertOverlay = document.createElement("div");
+    humanAlertOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(220, 53, 69, 0);
+      z-index: 9999;
+      pointer-events: none;
+      transition: background 0.3s;
+    `;
+    document.body.appendChild(humanAlertOverlay);
 
-  humanAlertOverlay = document.createElement("div");
-  humanAlertOverlay.style.cssText = `
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(220, 53, 69, 0.95);
-    color: white;
-    padding: 30px 50px;
-    border-radius: 15px;
-    font-size: 24px;
-    font-weight: bold;
-    z-index: 10000;
-    display: none;
-    text-align: center;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-  `;
-  humanAlertOverlay.innerHTML = "HUMAN DETECTED";
-  document.body.appendChild(humanAlertOverlay);
+    const alertBox = document.createElement("div");
+    alertBox.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      color: white;
+      padding: 40px 60px;
+      border-radius: 20px;
+      font-size: 32px;
+      font-weight: 900;
+      z-index: 10001;
+      display: none;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(220, 53, 69, 0.8), 0 20px 60px rgba(0,0,0,0.5);
+      border: 4px solid white;
+      animation: pulse 0.5s infinite;
+    `;
+    alertBox.id = "intrusionAlertBox";
+    alertBox.innerHTML = `
+      <div style="font-size: 48px; margin-bottom: 10px;">🚨</div>
+      <div>INTRUSION DETECTED</div>
+      <div id="intrusionCount" style="font-size: 20px; margin-top: 10px; opacity: 0.9;">1 person(s) detected</div>
+    `;
+    document.body.appendChild(alertBox);
+
+    const style = document.createElement("style");
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); }
+        50% { transform: translate(-50%, -50%) scale(1.05); }
+      }
+      @keyframes flashBorder {
+        0%, 100% { border-color: white; }
+        50% { border-color: #fbbf24; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+function triggerIntrusionAlert(count) {
+  if (!connected || !streamReceived) return;
+  if (intrusionAlertActive) return;
+
+  intrusionAlertActive = true;
+  initHumanAlertUI();
+
+  if (humanAlertAudio) {
+    humanAlertAudio.currentTime = 0;
+    humanAlertAudio.play().catch(e => console.log("Audio play failed:", e));
+  }
+
+  const alertBox = document.getElementById("intrusionAlertBox");
+  if (alertBox) {
+    alertBox.style.display = "block";
+    document.getElementById("intrusionCount").textContent = `${count} person(s) detected`;
+  }
+
+  if (humanAlertOverlay) {
+    humanAlertOverlay.style.background = "rgba(220, 53, 69, 0.3)";
+    humanAlertOverlay.style.animation = "flashBorder 0.3s infinite";
+  }
+
+  document.body.style.animation = "flashBorder 0.3s infinite";
+
+  if ("Notification" in window && Notification.permission === "granted") {
+    try {
+      new Notification("🚨 SECURECAM INTRUSION ALERT", {
+        body: `INTRUSION DETECTED! ${count} person(s) in camera view.`,
+        priority: "high",
+        tag: "intrusion"
+      });
+    } catch (e) {}
+  }
+
+  setTimeout(() => {
+    stopIntrusionAlert();
+  }, 8000);
+}
+
+function stopIntrusionAlert() {
+  intrusionAlertActive = false;
+
+  if (humanAlertAudio) {
+    humanAlertAudio.pause();
+    humanAlertAudio.currentTime = 0;
+  }
+
+  const alertBox = document.getElementById("intrusionAlertBox");
+  if (alertBox) {
+    alertBox.style.display = "none";
+  }
+
+  if (humanAlertOverlay) {
+    humanAlertOverlay.style.background = "rgba(220, 53, 69, 0)";
+    humanAlertOverlay.style.animation = "none";
+  }
+
+  document.body.style.animation = "none";
 }
 
 socket.on("human_detected", (data) => {
   if (data.room !== roomId) return;
-
-  initHumanAlertUI();
-
-  if (humanAlertSound) {
-    humanAlertSound.currentTime = 0;
-    humanAlertSound.play().catch(() => {});
-  }
-
-  if (humanAlertOverlay) {
-    humanAlertOverlay.style.display = "block";
-    humanAlertOverlay.innerHTML = `HUMAN DETECTED<br><small>${data.count || 1} person(s)</small>`;
-
-    setTimeout(() => {
-      if (humanAlertOverlay) {
-        humanAlertOverlay.style.display = "none";
-      }
-    }, 5000);
-  }
-
-  if ("Notification" in window && Notification.permission === "granted") {
-    try {
-      new Notification("SecureCam Alert", {
-        body: `Human detected! ${data.count || 1} person(s) in view.`
-      });
-    } catch (e) {}
-  }
+  console.log("INTRUSION ALERT:", data.count, "person(s)");
+  triggerIntrusionAlert(data.count || 1);
 });

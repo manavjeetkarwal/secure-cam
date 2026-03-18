@@ -861,47 +861,27 @@ def api_activity_alarms():
 
         c.execute(
             """
-            SELECT COUNT(*) as total
+            SELECT time_sec
             FROM camera_cover_events
             WHERE camera_room_id=? AND session_id=?
+            ORDER BY time_sec
         """,
             (room, session_id),
         )
-        camera_cover_row = c.fetchone()
-        camera_covers = camera_cover_row["total"] if camera_cover_row else 0
-
-        c.execute(
-            """
-            SELECT COUNT(*) as total
-            FROM human_detection_events
-            WHERE camera_room_id=? AND session_id=?
-        """,
-            (room, session_id),
-        )
-        human_detection_row = c.fetchone()
-        human_detections = human_detection_row["total"] if human_detection_row else 0
+        camera_cover_times = [r["time_sec"] for r in c.fetchall()]
 
         conn.close()
 
         return jsonify(
             {
-                "total_motion": total_motion,
-                "viewer_alarms": viewer_alarms,
-                "camera_covers": camera_covers,
-                "human_detections": human_detections,
+                "viewer_alarm_times": viewer_alarm_times,
+                "camera_cover_times": camera_cover_times,
             }
         )
 
     except Exception as e:
-        print("Summary API error:", e)
-        return jsonify(
-            {
-                "total_motion": 0,
-                "viewer_alarms": 0,
-                "camera_covers": 0,
-                "human_detections": 0,
-            }
-        )
+        print("Alarm API Error:", e)
+        return jsonify({"viewer_alarm_times": [], "camera_cover_times": []})
 
 
 @app.route("/api/activity/human_detections")

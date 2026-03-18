@@ -81,12 +81,43 @@ const config = {
 async function loadHumanDetectionModel() {
   if (humanDetectionModel) return humanDetectionModel;
 
+  const btn = document.getElementById("humanDetectBtn");
+  
+  if (btn) btn.innerText = "Intrusion Detection: Checking model...";
+  
   try {
-    humanDetectionModel = await cocoSsd.load();
-    console.log("Human detection model loaded");
+    console.log("Attempting to load COCO-SSD model...");
+    
+    const localModelUrl = "/static/models/ssdlite/model.json";
+    let modelLoaded = false;
+    
+    try {
+      const response = await fetch(localModelUrl, { method: 'HEAD' });
+      if (response.ok) {
+        console.log("Loading model from local storage...");
+        humanDetectionModel = await cocoSsd.load({
+          base: "lite_mobilenet_v2",
+          modelUrl: localModelUrl
+        });
+        modelLoaded = true;
+      }
+    } catch (localErr) {
+      console.log("Local model not available, trying CDN...");
+    }
+    
+    if (!modelLoaded) {
+      if (btn) btn.innerText = "Intrusion Detection: Loading from CDN...";
+      
+      humanDetectionModel = await cocoSsd.load({
+        base: "lite_mobilenet_v2"
+      });
+    }
+    
+    console.log("Human detection model loaded successfully");
     return humanDetectionModel;
   } catch (e) {
     console.error("Human detection model load error:", e);
+    humanDetectionModel = null;
     throw e;
   }
 }
@@ -100,26 +131,26 @@ async function toggleHumanDetection() {
   }
 
   if (!humanDetectionEnabled) {
+    if (btn) btn.innerText = "Intrusion Detection: Loading...";
+    
     try {
-      if (btn) btn.innerText = "Human Detection: Loading...";
       await loadHumanDetectionModel();
 
       humanDetectionEnabled = true;
       humanStableHits = 0;
       lastHumanAlertTime = 0;
 
-      if (btn) btn.innerText = "Human Detection: ON";
+      if (btn) btn.innerText = "Intrusion Detection: Armed";
       startHumanDetection();
     } catch (e) {
-      if (btn) btn.innerText = "Human Detection: OFF";
-      alert("Failed to load human detection model");
+      if (btn) btn.innerText = "Intrusion Detection: OFF";
+      alert("Failed to load detection model. Check internet connection or download model for offline use.");
     }
   } else {
     stopHumanDetection();
-    if (btn) btn.innerText = "Human Detection: OFF";
+    if (btn) btn.innerText = "Intrusion Detection: OFF";
   }
 }
-
 
 function toggleMenu() {
   const menu = document.getElementById("sideMenu");
@@ -725,7 +756,7 @@ function startHumanDetection() {
       const now = Date.now();
 
       if (humanStableHits >= preset.minHits && now - lastHumanAlertTime > preset.cooldown) {
-        triggerAlarm("Human detected!");
+        console.log("INTRUSION DETECTED:", persons.length, "person(s)");
 
         socket.emit("human_detected", {
           room: cameraId,

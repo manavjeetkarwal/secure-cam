@@ -29,6 +29,7 @@ let pieChart;
 
 let alarmCount = 0;
 let coverCount = 0;
+let humanDetectionCount = 0;
 
 let latestMotionData = [];
 let lastTableUpdate = 0;
@@ -80,19 +81,24 @@ async function loadMotionData() {
   try {
     const motionRes = await fetch("/api/activity/motion?camera=" + encodeURIComponent(cameraId));
     const alarmRes = await fetch("/api/activity/alarms?camera=" + encodeURIComponent(cameraId));
+    const humanRes = await fetch("/api/activity/human_detections?camera=" + encodeURIComponent(cameraId));
 
     if (!motionRes.ok) throw new Error("Motion API failed");
     if (!alarmRes.ok) throw new Error("Alarm API failed");
+    if (!humanRes.ok) throw new Error("Human detection API failed");
 
     const motionData = await motionRes.json();
     const alarmData = await alarmRes.json();
+    const humanData = await humanRes.json();
 
     const safeMotionData = Array.isArray(motionData) ? motionData : [];
     const alarmTimes = Array.isArray(alarmData.viewer_alarm_times) ? alarmData.viewer_alarm_times : [];
     const coverTimes = Array.isArray(alarmData.camera_cover_times) ? alarmData.camera_cover_times : [];
+    const humanTimes = Array.isArray(humanData) ? humanData : [];
 
     alarmCount = alarmTimes.length;
     coverCount = coverTimes.length;
+    humanDetectionCount = humanTimes.length;
 
     const latestTime = safeMotionData.length
       ? Number(safeMotionData[safeMotionData.length - 1].time) || 0
@@ -130,7 +136,7 @@ async function loadMotionData() {
     calculateRisk(latestMotionData);
 
     if (Date.now() - lastTableUpdate > 5000) {
-      updateTable(latestMotionData, alarmTimes, coverTimes);
+      updateTable(latestMotionData, alarmTimes, coverTimes, humanTimes);
       lastTableUpdate = Date.now();
     }
 
@@ -164,7 +170,7 @@ function updateBarChart(labels, motions) {
   barChart.update();
 }
 
-function updateTable(data, alarmTimes = [], coverTimes = []) {
+function updateTable(data, alarmTimes = [], coverTimes = [], humanTimes = []) {
   const tbody = document.querySelector("#activityTable tbody");
   if (!tbody) return;
 
@@ -193,8 +199,13 @@ function updateTable(data, alarmTimes = [], coverTimes = []) {
 
     const hasViewerAlarm = alarmTimes.some(t => Math.abs((Number(t) || 0) - timeValue) <= 2);
     const hasCoverAlarm = coverTimes.some(t => Math.abs((Number(t) || 0) - timeValue) <= 2);
+    const hasHumanDetection = humanTimes.some(t => Math.abs((Number(t) || 0) - timeValue) <= 2);
 
-    if (hasViewerAlarm && hasCoverAlarm) {
+    if (hasHumanDetection) {
+      alarmText = "Human Detected";
+      levelClass = "high";
+      activity = "INTRUSION";
+    } else if (hasViewerAlarm && hasCoverAlarm) {
       alarmText = "Viewer + Cover";
       levelClass = "high";
       activity = "Critical";
