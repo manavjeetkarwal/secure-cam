@@ -847,21 +847,28 @@ def api_activity_motion():
 
 @app.route("/api/activity/alarms")
 def api_activity_alarms():
+    print("\n=== ALARMS API CALLED ===")
     if not is_logged_in():
+        print("Alarms API: Not logged in!")
         return jsonify({"viewer_alarm_times": [], "camera_cover_times": []}), 401
 
     room = request.args.get("camera")
+    print(f"Alarms API: Requested room={room}")
     if not room:
+        print("Alarms API: No camera room provided")
         return jsonify({"viewer_alarm_times": [], "camera_cover_times": []})
 
     try:
         session_id = get_current_or_latest_session_id(room)
+        print(f"Alarms API: room={room}, session_id={session_id}")
         if not session_id:
+            print(f"Alarms API: No session found for room {room}")
             return jsonify({"viewer_alarm_times": [], "camera_cover_times": []})
 
         conn = get_connection()
         c = conn.cursor()
 
+        print("Alarms API: Querying viewer alarms")
         c.execute(
             """
             SELECT time_sec
@@ -872,7 +879,9 @@ def api_activity_alarms():
             (room, session_id),
         )
         viewer_alarm_times = [r["time_sec"] for r in c.fetchall()]
+        print(f"Alarms API: viewer_alarm_times count={len(viewer_alarm_times)}")
 
+        print("Alarms API: Querying camera covers")
         c.execute(
             """
             SELECT time_sec
@@ -883,6 +892,7 @@ def api_activity_alarms():
             (room, session_id),
         )
         camera_cover_times = [r["time_sec"] for r in c.fetchall()]
+        print(f"Alarms API: camera_cover_times count={len(camera_cover_times)}")
 
         conn.close()
 
@@ -894,13 +904,18 @@ def api_activity_alarms():
         )
 
     except Exception as e:
-        print("Alarm API Error:", e)
+        import traceback
+
+        print("Alarms API Error:", e)
+        traceback.print_exc()
         return jsonify({"viewer_alarm_times": [], "camera_cover_times": []})
 
 
 @app.route("/api/activity/summary")
 def api_activity_summary():
+    print("\n=== SUMMARY API CALLED ===")
     if not is_logged_in():
+        print("Summary API: Not logged in!")
         return jsonify(
             {
                 "total_motion": 0,
@@ -911,7 +926,9 @@ def api_activity_summary():
         ), 401
 
     room = request.args.get("camera")
+    print(f"Summary API: Requested room={room}")
     if not room:
+        print("Summary API: No camera room provided")
         return jsonify(
             {
                 "total_motion": 0,
@@ -923,7 +940,9 @@ def api_activity_summary():
 
     try:
         session_id = get_current_or_latest_session_id(room)
+        print(f"Summary API: room={room}, session_id={session_id}")
         if not session_id:
+            print(f"Summary API: No session found for room {room}")
             return jsonify(
                 {
                     "total_motion": 0,
@@ -936,6 +955,7 @@ def api_activity_summary():
         conn = get_connection()
         c = conn.cursor()
 
+        print("Summary API: Querying motion sum")
         c.execute(
             """
             SELECT SUM(motion_count) as total_motion
@@ -950,7 +970,9 @@ def api_activity_summary():
             if motion_row and motion_row["total_motion"]
             else 0
         )
+        print(f"Summary API: total_motion={total_motion}")
 
+        print("Summary API: Querying viewer alarms count")
         c.execute(
             """
             SELECT COUNT(*) as total
@@ -961,7 +983,9 @@ def api_activity_summary():
         )
         viewer_alarm_row = c.fetchone()
         viewer_alarms = viewer_alarm_row["total"] if viewer_alarm_row else 0
+        print(f"Summary API: viewer_alarms={viewer_alarms}")
 
+        print("Summary API: Querying camera covers count")
         c.execute(
             """
             SELECT COUNT(*) as total
@@ -972,7 +996,9 @@ def api_activity_summary():
         )
         camera_cover_row = c.fetchone()
         camera_covers = camera_cover_row["total"] if camera_cover_row else 0
+        print(f"Summary API: camera_covers={camera_covers}")
 
+        print("Summary API: Querying human detections count")
         c.execute(
             """
             SELECT COUNT(*) as total
@@ -983,6 +1009,7 @@ def api_activity_summary():
         )
         human_detection_row = c.fetchone()
         human_detections = human_detection_row["total"] if human_detection_row else 0
+        print(f"Summary API: human_detections={human_detections}")
 
         conn.close()
 
@@ -996,7 +1023,10 @@ def api_activity_summary():
         )
 
     except Exception as e:
+        import traceback
+
         print("Summary API error:", e)
+        traceback.print_exc()
         return jsonify(
             {
                 "total_motion": 0,
@@ -1009,21 +1039,28 @@ def api_activity_summary():
 
 @app.route("/api/activity/human_detections")
 def api_activity_human_detections():
+    print("\n=== HUMAN DETECTIONS API CALLED ===")
     if not is_logged_in():
+        print("Human API: Not logged in!")
         return jsonify([]), 401
 
     room = request.args.get("camera")
+    print(f"Human API: Requested room={room}")
     if not room:
+        print("Human API: No camera room provided")
         return jsonify([])
 
     try:
         session_id = get_current_or_latest_session_id(room)
+        print(f"Human API: room={room}, session_id={session_id}")
         if not session_id:
+            print(f"Human API: No session found for room {room}")
             return jsonify([])
 
         conn = get_connection()
         c = conn.cursor()
 
+        print("Human API: Querying detections")
         c.execute(
             """
             SELECT time_sec, person_count
@@ -1036,16 +1073,21 @@ def api_activity_human_detections():
         )
 
         rows = c.fetchall()[::-1]
+        print(f"Human API: raw_row_count={len(rows)}")
         conn.close()
 
         data = []
         for r in rows:
             data.append({"time": r["time_sec"], "count": r["person_count"]})
+        print(f"Human API: returning {len(data)} items")
 
         return jsonify(data)
 
     except Exception as e:
+        import traceback
+
         print("Human detection API Error:", e)
+        traceback.print_exc()
         return jsonify([])
 
 
