@@ -24,6 +24,40 @@ body{background:radial-gradient(circle at top left, rgba(56,189,248,0.12), trans
 .page-hero p{color:var(--muted);line-height:1.7;max-width:760px;}
 
 .top-action{margin-bottom:20px;}
+
+.activity-status{
+  padding:14px 18px;
+  border-radius:14px;
+  margin-bottom:20px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:600;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+}
+.activity-status.error{
+  background:rgba(239,68,68,0.15);
+  border-color:rgba(239,68,68,0.3);
+  color:#fecaca;
+}
+.activity-status.success{
+  background:rgba(34,197,94,0.15);
+  border-color:rgba(34,197,94,0.3);
+  color:#bbf7d0;
+}
+.status-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+}
+.status-dot.loading{
+  background:#f59e0b;
+  animation:pulse 1s infinite;
+}
+.status-dot.success{background:#22c55e;}
+.status-dot.error{background:#ef4444;}
+
 .live-link-btn{
   display:inline-flex;text-decoration:none;padding:12px 18px;border-radius:14px;font-weight:800;
   background:linear-gradient(135deg,#38bdf8,#0ea5e9);color:#00111f;

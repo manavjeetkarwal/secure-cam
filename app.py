@@ -884,6 +884,115 @@ def api_activity_alarms():
         return jsonify({"viewer_alarm_times": [], "camera_cover_times": []})
 
 
+@app.route("/api/activity/summary")
+def api_activity_summary():
+    if not is_logged_in():
+        return jsonify(
+            {
+                "total_motion": 0,
+                "viewer_alarms": 0,
+                "camera_covers": 0,
+                "human_detections": 0,
+            }
+        ), 401
+
+    room = request.args.get("camera")
+    if not room:
+        return jsonify(
+            {
+                "total_motion": 0,
+                "viewer_alarms": 0,
+                "camera_covers": 0,
+                "human_detections": 0,
+            }
+        )
+
+    try:
+        session_id = get_current_or_latest_session_id(room)
+        if not session_id:
+            return jsonify(
+                {
+                    "total_motion": 0,
+                    "viewer_alarms": 0,
+                    "camera_covers": 0,
+                    "human_detections": 0,
+                }
+            )
+
+        conn = get_connection()
+        c = conn.cursor()
+
+        c.execute(
+            """
+            SELECT SUM(motion_count) as total_motion
+            FROM motion_events
+            WHERE camera_room_id=? AND session_id=?
+        """,
+            (room, session_id),
+        )
+        motion_row = c.fetchone()
+        total_motion = (
+            motion_row["total_motion"]
+            if motion_row and motion_row["total_motion"]
+            else 0
+        )
+
+        c.execute(
+            """
+            SELECT COUNT(*) as total
+            FROM viewer_alarm_events
+            WHERE camera_room_id=? AND session_id=?
+        """,
+            (room, session_id),
+        )
+        viewer_alarm_row = c.fetchone()
+        viewer_alarms = viewer_alarm_row["total"] if viewer_alarm_row else 0
+
+        c.execute(
+            """
+            SELECT COUNT(*) as total
+            FROM camera_cover_events
+            WHERE camera_room_id=? AND session_id=?
+        """,
+            (room, session_id),
+        )
+        camera_cover_row = c.fetchone()
+        camera_covers = camera_cover_row["total"] if camera_cover_row else 0
+
+        c.execute(
+            """
+            SELECT COUNT(*) as total
+            FROM human_detection_events
+            WHERE camera_room_id=? AND session_id=?
+        """,
+            (room, session_id),
+        )
+        human_detection_row = c.fetchone()
+        human_detections = human_detection_row["total"] if human_detection_row else 0
+
+        conn.close()
+
+        return jsonify(
+            {
+                "total_motion": total_motion,
+                "viewer_alarms": viewer_alarms,
+                "camera_covers": camera_covers,
+                "human_detections": human_detections,
+            }
+        )
+
+    except Exception as e:
+        print("Summary API error:", e)
+        return jsonify(
+            {
+                "total_motion": 0,
+                "viewer_alarms": 0,
+                "camera_covers": 0,
+                "human_detections": 0,
+            }
+        )
+
+
 @app.route("/api/activity/human_detections")
 def api_activity_human_detections():
     if not is_logged_in():

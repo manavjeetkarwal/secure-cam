@@ -76,20 +76,45 @@ function createCharts() {
 }
 
 async function loadMotionData() {
-  if (!cameraId || cameraId === "null" || cameraId === "undefined") return;
+  if (!cameraId || cameraId === "null" || cameraId === "undefined") {
+    updateActivityStatus("error", "No camera selected. Go to Live page first.");
+    return;
+  }
+
+  updateActivityStatus("loading", "Loading activity data for camera: " + cameraId + "...");
 
   try {
-    const motionRes = await fetch("/api/activity/motion?camera=" + encodeURIComponent(cameraId));
-    const alarmRes = await fetch("/api/activity/alarms?camera=" + encodeURIComponent(cameraId));
-    const humanRes = await fetch("/api/activity/human_detections?camera=" + encodeURIComponent(cameraId));
+    let motionData = [];
+    let alarmData = { viewer_alarm_times: [], camera_cover_times: [] };
+    let humanData = [];
 
-    if (!motionRes.ok) throw new Error("Motion API failed");
-    if (!alarmRes.ok) throw new Error("Alarm API failed");
-    if (!humanRes.ok) throw new Error("Human detection API failed");
+    // Fetch all data - don't let one failure break everything
+    try {
+      const motionRes = await fetch("/api/activity/motion?camera=" + encodeURIComponent(cameraId));
+      if (motionRes.ok) {
+        motionData = await motionRes.json() || [];
+      }
+    } catch (e) {
+      console.warn("Motion API failed:", e);
+    }
 
-    const motionData = await motionRes.json();
-    const alarmData = await alarmRes.json();
-    const humanData = await humanRes.json();
+    try {
+      const alarmRes = await fetch("/api/activity/alarms?camera=" + encodeURIComponent(cameraId));
+      if (alarmRes.ok) {
+        alarmData = await alarmRes.json() || { viewer_alarm_times: [], camera_cover_times: [] };
+      }
+    } catch (e) {
+      console.warn("Alarm API failed:", e);
+    }
+
+    try {
+      const humanRes = await fetch("/api/activity/human_detections?camera=" + encodeURIComponent(cameraId));
+      if (humanRes.ok) {
+        humanData = await humanRes.json() || [];
+      }
+    } catch (e) {
+      console.warn("Human detection API failed:", e);
+    }
 
     const safeMotionData = Array.isArray(motionData) ? motionData : [];
     const alarmTimes = Array.isArray(alarmData.viewer_alarm_times) ? alarmData.viewer_alarm_times : [];
@@ -99,6 +124,14 @@ async function loadMotionData() {
     alarmCount = alarmTimes.length;
     coverCount = coverTimes.length;
     humanDetectionCount = humanTimes.length;
+
+    const totalEvents = safeMotionData.length + alarmTimes.length + coverTimes.length + humanTimes.length;
+
+    if (totalEvents === 0) {
+      updateActivityStatus("loading", "No activity data yet. Make sure the camera is active.");
+    } else {
+      updateActivityStatus("success", "Showing " + totalEvents + " events for camera: " + cameraId);
+    }
 
     const latestTime = safeMotionData.length
       ? Number(safeMotionData[safeMotionData.length - 1].time) || 0
@@ -142,6 +175,7 @@ async function loadMotionData() {
 
   } catch (e) {
     console.error("Activity load error:", e);
+    updateActivityStatus("error", "Error loading activity data: " + e.message);
   }
 }
 
@@ -268,6 +302,12 @@ function calculateRisk(data) {
     reasons.push("Camera cover attempt detected");
   }
 
+  // Human detection is the highest priority
+  if (humanDetectionCount >= 1) {
+    riskScore += 60;
+    reasons.push("Human intrusion detected!");
+  }
+
   let high = 0;
   let low = 0;
   let none = 0;
@@ -355,7 +395,8 @@ async function updateSummary(totalMotion, riskLevel) {
     const totalMotionValue = Number(data.total_motion) || totalMotion || 0;
     const viewerAlarms = Number(data.viewer_alarms) || 0;
     const cameraCovers = Number(data.camera_covers) || 0;
-    const totalAlarms = viewerAlarms + cameraCovers;
+    const humanDetections = Number(data.human_detections) || 0;
+    const totalAlarms = viewerAlarms + cameraCovers + humanDetections;
 
     const summaryText = document.getElementById("summaryText");
     if (!summaryText) return;
@@ -366,12 +407,22 @@ async function updateSummary(totalMotion, riskLevel) {
 Total Motion Detections: ${totalMotionValue}
 Viewer Alarm Triggers: ${viewerAlarms}
 Camera Cover Attempts: ${cameraCovers}
-Total Alarm Events: ${totalAlarms}
+Human Intrusion Events: ${humanDetections}
+Total Security Events: ${totalAlarms}
 
-Risk is calculated mainly from alarm triggers and camera cover attempts.
-Motion count is used as a supporting factor.`;
+Risk is calculated from alarms, camera covers, and human detections.`;
+
+    const summaryCard = document.querySelector(".summary");
+    if (summaryCard) {
+      summaryCard.style.display = "block";
+    }
   } catch (e) {
     console.error("Summary fetch error:", e);
+    const summaryText = document.getElementById("summaryText");
+    if (summaryText) {
+      summaryText.innerText = "Unable to load summary data. Please check if the camera is active and connected.";
+      summaryText.style.color = "#fda4af";
+    }
   }
 }
 
@@ -389,6 +440,22 @@ function toggleMenu() {
 createCharts();
 loadMotionData();
 setInterval(loadMotionData, 5000);
+
+function updateActivityStatus(status, message) {
+  const statusEl = document.getElementById("activityStatus");
+  const statusText = document.getElementById("statusText");
+  const dot = statusEl ? statusEl.querySelector(".status-dot") : null;
+  
+  if (statusEl) {
+    statusEl.className = "activity-status " + status;
+  }
+  if (statusText) {
+    statusText.textContent = message;
+  }
+  if (dot) {
+    dot.className = "status-dot " + status;
+  }
+}
 
 function goToLivePage() {
   if (!cameraId) {
