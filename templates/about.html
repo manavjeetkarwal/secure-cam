@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About Us - SecureCam</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/about.css') }}">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <div class="logo">
+      <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="SecureCam Logo">
+      <a href="/">SecureCam</a>
+    </div>
+    <div class="Intro">
+      <p><b>Watch smarter. Detect faster. Stay safer.</b></p>
+    </div>
+  </div>
+
+  <div class="nav-right">
+    <a href="/account" class="account-link">Account</a>
+    <div class="hamburger" onclick="toggleMenu()">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  </div>
+</nav>
+
+<div class="side-menu" id="sideMenu">
+  <div class="side-menu-header">
+    <h3>SecureCam</h3>
+    <p>Quick Navigation</p>
+  </div>
+  <a href="/connect">Connect Your Camera</a>
+  <a href="/live">Live Video Streaming</a>
+  <a href="/videos">Stored Video List</a>
+  <a href="/photos">Stored Photos List</a>
+  <a href="/about">About Section</a>
+  <a href="/feedback">Feedback / Inquiry</a>
+  <a href="/account">Account Center</a>
+</div>
+
+<div class="page-shell">
+  <section class="page-hero">
+    <h1>About SecureCam</h1>
+    <p>
+      SecureCam is a smart security monitoring platform designed to deliver modern surveillance,
+      intelligent alerts, activity analysis, and remote accessibility through a simple web interface.
+    </p>
+  </section>
+
+  <section class="about-container">
+    <div class="left-section">
+      <div class="card horizontal-card">
+        <h2>Who We Are</h2>
+        <p>
+          SecureCam is a smart web-based camera security monitoring system designed to provide
+          real-time surveillance, motion detection analytics, and intelligent risk assessment
+          for modern homes and organizations.
+        </p>
+
+        <h2>Our Values</h2>
+        <ul>
+          <li>🔐 Security First Approach</li>
+          <li>⚡ Real-Time Monitoring</li>
+          <li>📊 Intelligent Analytics</li>
+          <li>🌐 Accessible Anywhere</li>
+          <li>🚀 Continuous Innovation</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="right-section">
+      <div class="card vertical-card">
+        <h2>What We Provide</h2>
+        <ul>
+          <li>Live Video Streaming</li>
+          <li>Motion Detection System</li>
+          <li>Activity Reports & Risk Analysis</li>
+          <li>Stored Video & Photo Management</li>
+          <li>Smart Alert System</li>
+        </ul>
+      </div>
+
+      <div class="card vertical-card">
+        <h2>Why Choose Us?</h2>
+        <ul>
+          <li>Advanced Monitoring Technology</li>
+          <li>User-Friendly Interface</li>
+          <li>Secure Data Storage</li>
+          <li>Real-Time Alerts</li>
+          <li>Modern Dashboard Analytics</li>
+        </ul>
+      </div>
+
+      <div class="card vertical-card contact-card">
+        <h2>Contact</h2>
+        <p>Email: support@securecam.com</p>
+        <p>Phone: +91 98765 43210</p>
+        <p>Location: India</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="{{ url_for('static', filename='js/about.js') }}"></script>
+</body>
+</html>

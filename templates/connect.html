@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureCam - Camera</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/connect.css') }}">
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <div class="logo">
+      <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo">
+      <a href="/">SecureCam</a>
+    </div>
+    <div class="Intro">
+      <p><b>Watch smarter. Detect faster. Stay safer.</b></p>
+    </div>
+  </div>
+
+  <div class="nav-right">
+    <a href="/account" class="account-link">Account</a>
+    <div class="hamburger" onclick="toggleMenu()">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  </div>
+</nav>
+
+<div class="side-menu" id="sideMenu">
+  <div class="side-menu-header">
+    <h3>SecureCam</h3>
+    <p>Quick Navigation</p>
+  </div>
+  <a href="/connect">Connect Your Camera</a>
+  <a href="/live">Live Video Streaming</a>
+  <a href="/videos">Stored Video List</a>
+  <a href="/photos">Stored Photos List</a>
+  <a href="/about">About Section</a>
+  <a href="/feedback">Feedback / Inquiry</a>
+  <a href="/account">Account Center</a>
+</div>
+
+<div class="page-shell">
+  <section class="page-hero">
+    <h1>Camera Control Center</h1>
+    <p>Start your device camera, share live video, manage viewers, and send private chat messages from one dashboard.</p>
+  </section>
+
+  <section class="connect-layout">
+    <div class="camera-box card">
+      <div class="camera-controls">
+        <button class="connect-btn" onclick="startCamera()">Start Camera</button>
+        <button class="switch-btn" onclick="switchCamera()">Switch Camera</button>
+        <button class="danger-btn" onclick="stopCamera()">Stop Camera</button>
+        <button class="warning-btn" onclick="stopAlarm()">Stop Alarm</button>
+        <button onclick="toggleHumanDetection()" id="humanDetectBtn">
+  Human Detection: OFF
+</button>
+      </div>
+
+      <div id="cameraError" class="error-box"></div>
+
+      <div class="camera-id-box">
+        <h3>Camera ID</h3>
+        <div id="cameraId">Not started</div>
+      </div>
+
+      <div id="videoContainer">
+        <video id="localVideo" autoplay playsinline muted></video>
+        <div id="alertOverlay">⚠ ALERT</div>
+      </div>
+    </div>
+
+    <div class="side-panels">
+      <div class="viewer-panel card">
+        <h3>Live Viewers: <span id="viewerCount">0</span></h3>
+        <ul id="viewerList" class="viewer-list"></ul>
+      </div>
+
+      <div id="chatBox" class="card">
+        <h3>Private Chat</h3>
+
+        <label for="viewerSelect">Select Viewer:</label>
+        <select id="viewerSelect">
+          <option value="">Select viewer</option>
+        </select>
+
+        <div id="messages"></div>
+
+        <div class="chat-controls">
+          <input id="chatInput" placeholder="Type message">
+          <button onclick="sendChat()">Send</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<audio id="alarmSound">
+  <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg">
+</audio>
+
+<canvas id="coverCanvas" style="display:none;"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
+<script src="{{ url_for('static', filename='js/connect.js') }}"></script>
+</body>
+</html>

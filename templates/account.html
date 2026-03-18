@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Account Center - SecureCam</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <div class="logo">
+      <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="SecureCam Logo">
+      <a href="/">SecureCam</a>
+    </div>
+    <div class="Intro">
+      <p><b>Watch smarter. Detect faster. Stay safer.</b></p>
+    </div>
+  </div>
+
+  <div class="nav-right">
+    <a href="/account" class="account-link active-link">Account</a>
+    <div class="hamburger" onclick="toggleMenu()">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  </div>
+</nav>
+
+<div class="side-menu" id="sideMenu">
+  <div class="side-menu-header">
+    <h3>SecureCam</h3>
+    <p>Quick Navigation</p>
+  </div>
+  <a href="/connect">Connect Your Camera</a>
+  <a href="/live">Live Video Streaming</a>
+  <a href="/videos">Stored Video List</a>
+  <a href="/photos">Stored Photos List</a>
+  <a href="/about">About Section</a>
+  <a href="/feedback">Feedback / Inquiry</a>
+  <a href="/account">Account Center</a>
+</div>
+
+<div class="page-shell">
+  <section class="page-hero">
+    <h1>Account Center</h1>
+    <p>View your profile, update account details, change password, logout, or remove your account securely.</p>
+  </section>
+
+  <section class="account-card">
+    <div class="account-top">
+      <div>
+        <h2>Profile Details</h2>
+        <p class="subtext">Manage your SecureCam account information</p>
+      </div>
+      <div class="user-id-box">
+        <span>User ID</span>
+        <strong id="userid"></strong>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="username">
+      </div>
+
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="email">
+      </div>
+
+      <div class="field">
+        <label>Phone</label>
+        <input type="text" id="phone">
+      </div>
+
+      <div class="field">
+        <label>Date of Birth</label>
+        <input type="date" id="dob">
+      </div>
+    </div>
+
+    <div class="field full-width">
+      <label>Password</label>
+      <div class="password-box">
+        <input type="password" id="password">
+        <button type="button" onclick="togglePassword()">👁</button>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="update-btn" onclick="updateAccount()">Update Account</button>
+      <button class="delete-btn" onclick="deleteAccount()">Delete Account</button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <p id="msg"></p>
+  </section>
+</div>
+
+<script src="{{ url_for('static', filename='js/account.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureCam - Home</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <div class="logo">
+      <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="SecureCam Logo">
+      <a href="/">SecureCam</a>
+    </div>
+    <div class="Intro">
+      <p><b>Watch smarter. Detect faster. Stay safer.</b></p>
+    </div>
+  </div>
+
+  <div class="nav-right">
+    {% if not logged_in %}
+      <button class="login-btn" onclick="window.location.href='/login'">Login</button>
+    {% endif %}
+    <a href="/account" class="account-link">Account</a>
+    <div class="hamburger" onclick="toggleMenu()">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  </div>
+</nav>
+
+<div class="side-menu" id="sideMenu">
+  <div class="side-menu-header">
+    <h3>SecureCam</h3>
+    <p>Quick Navigation</p>
+  </div>
+  <a href="/connect">Connect Your Camera</a>
+  <a href="/live">Live Video Streaming</a>
+  <a href="/videos">Stored Video List</a>
+  <a href="/photos">Stored Photos List</a>
+  <a href="/about">About Section</a>
+  <a href="/feedback">Feedback / Inquiry</a>
+  <a href="/account">Account Center</a>
+</div>
+
+<section class="hero" id="hero">
+  <div class="hero-overlay">
+    <div class="hero-content">
+      <span class="hero-tag">Smart Surveillance Platform</span>
+      <h1>Smart Camera Security System</h1>
+      <p>
+        Monitor your home anytime, anywhere with live streaming, motion detection,
+        activity reports, real-time alerts, and secure video storage in one modern dashboard.
+      </p>
+
+      <div class="hero-actions">
+        <button class="connect-btn" onclick="window.location.href='/connect'">
+          Connect Your Camera
+        </button>
+        <a href="/about" class="secondary-btn">Learn More</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="how-it-works">
+  <div class="section-box">
+    <h2>How It Works</h2>
+    <p>
+      SecureCam connects your camera to a smart web-based security platform where you can
+      monitor live video, store recordings, detect motion, view activity intelligence,
+      and manage everything from a clean and powerful interface.
+    </p>
+  </div>
+</section>
+
+<section class="features">
+  <h2>Basic Features</h2>
+  <div class="features-grid">
+    <div class="feature-box">Live Video Streaming</div>
+    <div class="feature-box">Capture Photo</div>
+    <div class="feature-box">Start / Stop Recording</div>
+    <div class="feature-box">Time & Date on Video</div>
+    <div class="feature-box">Stored Video List</div>
+    <div class="feature-box">Stored Photo List</div>
+    <div class="feature-box">Motion Detection</div>
+    <div class="feature-box">Camera Cover Alert</div>
+    <div class="feature-box">Activity Report</div>
+    <div class="feature-box">Risk Analysis</div>
+  </div>
+</section>
+
+<footer>
+  <p>© 2026 SecureCam. All Rights Reserved.</p>
+</footer>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
