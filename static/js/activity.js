@@ -8,21 +8,31 @@ const params = new URLSearchParams(window.location.search);
 const urlCameraId = params.get("camera");
 const storedCameraId = localStorage.getItem("securecam_activity_room");
 
+console.log("=== ACTIVITY PAGE LOADED ===");
+console.log("URL camera ID:", urlCameraId);
+console.log("Stored camera ID:", storedCameraId);
+
 let cameraId = null;
 
 if (urlCameraId) {
   cameraId = urlCameraId;
   localStorage.setItem("securecam_activity_room", urlCameraId);
+  console.log("Using camera ID from URL:", cameraId);
 } else if (storedCameraId) {
   cameraId = storedCameraId;
+  console.log("Using camera ID from storage:", cameraId);
 }
 
 if (!cameraId) {
-  console.warn("No camera id provided");
+  console.warn("NO CAMERA ID FOUND!");
 }
+
+console.log("Final cameraId:", cameraId);
 
 const barCtx = document.getElementById("barChart");
 const pieCtx = document.getElementById("pieChart");
+
+console.log("Chart elements found:", { barCtx: !!barCtx, pieCtx: !!pieCtx });
 
 let barChart;
 let pieChart;
@@ -35,11 +45,13 @@ let latestMotionData = [];
 let lastTableUpdate = 0;
 
 function createCharts() {
+  console.log("=== CREATING CHARTS ===");
   if (!barCtx || !pieCtx) {
-    console.error("Chart canvas not found");
+    console.error("Chart canvas not found!");
     return;
   }
 
+  console.log("Initializing bar chart...");
   barChart = new Chart(barCtx, {
     type: "bar",
     data: {
@@ -59,6 +71,7 @@ function createCharts() {
     }
   });
 
+  console.log("Initializing pie chart...");
   pieChart = new Chart(pieCtx, {
     type: "doughnut",
     data: {
@@ -73,10 +86,16 @@ function createCharts() {
       cutout: "65%"
     }
   });
+
+  console.log("Charts created successfully!");
 }
 
 async function loadMotionData() {
+  console.log("=== LOAD MOTION DATA CALLED ===");
+  console.log("cameraId:", cameraId);
+
   if (!cameraId || cameraId === "null" || cameraId === "undefined") {
+    console.error("No camera ID - aborting!");
     updateActivityStatus("error", "No camera selected. Go to Live page first.");
     return;
   }
@@ -88,34 +107,49 @@ async function loadMotionData() {
     let alarmData = { viewer_alarm_times: [], camera_cover_times: [] };
     let humanData = [];
 
-    // Fetch all data - don't let one failure break everything
+    console.log("Fetching motion data...");
     try {
       const motionRes = await fetch("/api/activity/motion?camera=" + encodeURIComponent(cameraId));
+      console.log("Motion API status:", motionRes.status);
       if (motionRes.ok) {
-        motionData = await motionRes.json() || [];
+        motionData = await motionRes.json();
+        console.log("Motion data received:", motionData);
+      } else {
+        console.error("Motion API failed with status:", motionRes.status);
       }
     } catch (e) {
-      console.warn("Motion API failed:", e);
+      console.error("Motion API exception:", e);
     }
 
+    console.log("Fetching alarm data...");
     try {
       const alarmRes = await fetch("/api/activity/alarms?camera=" + encodeURIComponent(cameraId));
+      console.log("Alarm API status:", alarmRes.status);
       if (alarmRes.ok) {
-        alarmData = await alarmRes.json() || { viewer_alarm_times: [], camera_cover_times: [] };
+        alarmData = await alarmRes.json();
+        console.log("Alarm data received:", alarmData);
+      } else {
+        console.error("Alarm API failed with status:", alarmRes.status);
       }
     } catch (e) {
-      console.warn("Alarm API failed:", e);
+      console.error("Alarm API exception:", e);
     }
 
+    console.log("Fetching human detection data...");
     try {
       const humanRes = await fetch("/api/activity/human_detections?camera=" + encodeURIComponent(cameraId));
+      console.log("Human API status:", humanRes.status);
       if (humanRes.ok) {
-        humanData = await humanRes.json() || [];
+        humanData = await humanRes.json();
+        console.log("Human data received:", humanData);
+      } else {
+        console.error("Human API failed with status:", humanRes.status);
       }
     } catch (e) {
-      console.warn("Human detection API failed:", e);
+      console.error("Human API exception:", e);
     }
 
+    console.log("=== PROCESSING DATA ===");
     const safeMotionData = Array.isArray(motionData) ? motionData : [];
     const alarmTimes = Array.isArray(alarmData.viewer_alarm_times) ? alarmData.viewer_alarm_times : [];
     const coverTimes = Array.isArray(alarmData.camera_cover_times) ? alarmData.camera_cover_times : [];
@@ -125,11 +159,16 @@ async function loadMotionData() {
     coverCount = coverTimes.length;
     humanDetectionCount = humanTimes.length;
 
+    console.log("Processed counts:", { alarmCount, coverCount, humanDetectionCount, motionRows: safeMotionData.length });
+
     const totalEvents = safeMotionData.length + alarmTimes.length + coverTimes.length + humanTimes.length;
+    console.log("Total events:", totalEvents);
 
     if (totalEvents === 0) {
-      updateActivityStatus("loading", "No activity data yet. Make sure the camera is active.");
+      console.warn("NO EVENTS FOUND!");
+      updateActivityStatus("loading", "No activity data yet. Make sure the camera is active and motion is being detected.");
     } else {
+      console.log("EVENTS FOUND! Updating UI...");
       updateActivityStatus("success", "Showing " + totalEvents + " events for camera: " + cameraId);
     }
 
@@ -158,6 +197,7 @@ async function loadMotionData() {
     const labels = [];
     const motions = [];
 
+    console.log("Updating bar chart with", safeMotionData.length, "data points");
     safeMotionData.forEach(row => {
       labels.push((row.time || 0) + "s");
       motions.push(Number(row.motion) || 0);
@@ -165,13 +205,19 @@ async function loadMotionData() {
 
     latestMotionData = safeMotionData;
 
+    console.log("Calling updateBarChart...");
     updateBarChart(labels, motions);
+
+    console.log("Calling calculateRisk...");
     calculateRisk(latestMotionData);
 
     if (Date.now() - lastTableUpdate > 5000) {
+      console.log("Calling updateTable...");
       updateTable(latestMotionData, alarmTimes, coverTimes, humanTimes);
       lastTableUpdate = Date.now();
     }
+
+    console.log("=== LOAD COMPLETE ===");
 
   } catch (e) {
     console.error("Activity load error:", e);
@@ -180,7 +226,15 @@ async function loadMotionData() {
 }
 
 function updateBarChart(labels, motions) {
-  if (!barChart) return;
+  console.log("=== UPDATE BAR CHART ===");
+  console.log("barChart exists:", !!barChart);
+  console.log("Labels:", labels);
+  console.log("Motions:", motions);
+
+  if (!barChart) {
+    console.error("barChart is null!");
+    return;
+  }
 
   const maxPoints = 15;
 
@@ -201,12 +255,23 @@ function updateBarChart(labels, motions) {
     }
   };
 
+  console.log("Calling barChart.update()...");
   barChart.update();
+  console.log("Bar chart updated!");
 }
 
 function updateTable(data, alarmTimes = [], coverTimes = [], humanTimes = []) {
+  console.log("=== UPDATE TABLE ===");
+  console.log("Data rows:", data.length);
+  console.log("Alarm times:", alarmTimes);
+  console.log("Cover times:", coverTimes);
+  console.log("Human times:", humanTimes);
+
   const tbody = document.querySelector("#activityTable tbody");
-  if (!tbody) return;
+  if (!tbody) {
+    console.error("Table body not found!");
+    return;
+  }
 
   tbody.innerHTML = "";
 
@@ -216,6 +281,8 @@ function updateTable(data, alarmTimes = [], coverTimes = [], humanTimes = []) {
   if (rows.length > maxRows) {
     rows = rows.slice(-maxRows);
   }
+
+  console.log("Creating", rows.length, "table rows");
 
   rows.forEach((row) => {
     const motionValue = Number(row.motion) || 0;
@@ -263,9 +330,13 @@ function updateTable(data, alarmTimes = [], coverTimes = [], humanTimes = []) {
 
     tbody.appendChild(tr);
   });
+
+  console.log("Table updated with", rows.length, "rows");
 }
 
 function calculateRisk(data) {
+  console.log("=== CALCULATE RISK ===");
+
   let totalMotion = 0;
 
   data.forEach(row => {
@@ -331,23 +402,39 @@ function calculateRisk(data) {
     reasons.push("No major suspicious activity detected");
   }
 
+  console.log("Risk calculated:", { riskLevel, riskScore, reasons });
+
   updatePieChart(high, low, none);
   updateRiskPanel(riskLevel, color, reasons);
   updateSummary(totalMotion, riskLevel);
 }
 
 function updatePieChart(high, low, none) {
-  if (!pieChart) return;
+  console.log("=== UPDATE PIE CHART ===");
+  console.log("pieChart exists:", !!pieChart);
+  console.log("Data:", { high, low, none });
+
+  if (!pieChart) {
+    console.error("pieChart is null!");
+    return;
+  }
+
   pieChart.data.datasets[0].data = [high, low, none];
   pieChart.update();
 }
 
 function updateRiskPanel(level, color, reasons) {
+  console.log("=== UPDATE RISK PANEL ===");
+  console.log("Level:", level, "Color:", color);
+
   const riskElement = document.getElementById("riskLevel");
   const reasonList = document.getElementById("riskReasons");
   const actionList = document.getElementById("riskActions");
 
-  if (!riskElement || !reasonList || !actionList) return;
+  if (!riskElement || !reasonList || !actionList) {
+    console.error("Risk panel elements not found!");
+    return;
+  }
 
   riskElement.innerHTML = `<span class="dot"></span> ${level}`;
   riskElement.style.background = color + "20";
@@ -385,12 +472,16 @@ function updateRiskPanel(level, color, reasons) {
 }
 
 async function updateSummary(totalMotion, riskLevel) {
+  console.log("=== UPDATE SUMMARY ===");
+
   try {
     const res = await fetch("/api/activity/summary?camera=" + encodeURIComponent(cameraId));
+    console.log("Summary API status:", res.status);
 
     if (!res.ok) throw new Error("Summary API failed");
 
     const data = await res.json();
+    console.log("Summary data:", data);
 
     const totalMotionValue = Number(data.total_motion) || totalMotion || 0;
     const viewerAlarms = Number(data.viewer_alarms) || 0;
@@ -399,7 +490,10 @@ async function updateSummary(totalMotion, riskLevel) {
     const totalAlarms = viewerAlarms + cameraCovers + humanDetections;
 
     const summaryText = document.getElementById("summaryText");
-    if (!summaryText) return;
+    if (!summaryText) {
+      console.error("Summary text element not found!");
+      return;
+    }
 
     summaryText.innerText =
 `Current Risk Level: ${riskLevel}
@@ -416,6 +510,8 @@ Risk is calculated from alarms, camera covers, and human detections.`;
     if (summaryCard) {
       summaryCard.style.display = "block";
     }
+
+    console.log("Summary updated!");
   } catch (e) {
     console.error("Summary fetch error:", e);
     const summaryText = document.getElementById("summaryText");
@@ -437,11 +533,8 @@ function toggleMenu() {
   }
 }
 
-createCharts();
-loadMotionData();
-setInterval(loadMotionData, 5000);
-
 function updateActivityStatus(status, message) {
+  console.log("STATUS UPDATE:", status, "-", message);
   const statusEl = document.getElementById("activityStatus");
   const statusText = document.getElementById("statusText");
   const dot = statusEl ? statusEl.querySelector(".status-dot") : null;
@@ -456,6 +549,13 @@ function updateActivityStatus(status, message) {
     dot.className = "status-dot " + status;
   }
 }
+
+console.log("=== STARTING ACTIVITY PAGE ===");
+createCharts();
+console.log("Calling initial loadMotionData...");
+loadMotionData();
+console.log("Setting up 5 second interval...");
+setInterval(loadMotionData, 5000);
 
 function goToLivePage() {
   if (!cameraId) {

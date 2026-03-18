@@ -791,21 +791,30 @@ def handle_human_detected(data):
 
 @app.route("/api/activity/motion")
 def api_activity_motion():
+    print(f"\n=== MOTION API CALLED ===")
     if not is_logged_in():
+        print("Motion API: Not logged in!")
         return jsonify([]), 401
 
     room = request.args.get("camera")
+    print(f"Motion API: Requested room={room}")
+
     if not room:
+        print("Motion API: No camera room provided")
         return jsonify([])
 
     try:
         session_id = get_current_or_latest_session_id(room)
+        print(f"Motion API: room={room}, session_id={session_id}")
+
         if not session_id:
+            print(f"Motion API: No session found for room {room}")
             return jsonify([])
 
         conn = get_connection()
         c = conn.cursor()
 
+        print(f"Motion API: Querying for room={room}, session_id={session_id}")
         c.execute(
             """
             SELECT time_sec, motion_count
@@ -824,10 +833,15 @@ def api_activity_motion():
         for r in rows:
             data.append({"time": r["time_sec"], "motion": r["motion_count"]})
 
+        print(f"Motion API: Found {len(rows)} raw rows, returning {len(data)} items")
+        print(f"Motion API: Data = {data}")
         return jsonify(data)
 
     except Exception as e:
-        print("Motion API Error:", e)
+        import traceback
+
+        print(f"Motion API Error: {e}")
+        traceback.print_exc()
         return jsonify([])
 
 
